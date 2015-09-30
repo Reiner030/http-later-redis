@@ -1,11 +1,8 @@
 {
   "name": "http-later-redis",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "redis driver for http-later",
   "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
   "dependencies": {
     "redis": "^1",
     "propertize": "^2"

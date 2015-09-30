@@ -25,7 +25,7 @@ function keygen(keyspace, req) {
  * @param {function} done
  */
 function queue(storage, req, done) {
-    var key = keygen(req);
+    var key = keygen(storage.keyspace, req);
 
     // store req as JSON serialized string
     req = JSON.stringify(req);
