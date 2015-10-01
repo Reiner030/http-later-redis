@@ -1,41 +1,25 @@
-var LaterStorage = require("http-later").LaterStorage,
+var createStorage = require("http-later-storage"),
     sha1 = require("crypto").createHash.bind(null, "sha1"),
-    redis = require("redis"),
-    prop = require("propertize");
-
-/**
- * Generate a key for the provided request.
- * @param {string} [keyspace]
- * @param {object} req
- * @returns {string}
- */
-function keygen(keyspace, req) {
-    if (arguments.length < 2) req = keyspace, keyspace = "";
-
-    req = JSON.stringify(req);
-    hash = sha1();
-    hash.update(JSON.stringify(req));
-    return keyspace + hash.digest("hex");
-}
+    redis = require("redis");
 
 /**
  * Queue a serialized request and pass the storage key to the callback.
- * @param {RedisStorage} storage
- * @param {object} req
+ * @param {object} task
  * @param {function} done
  */
-function queue(storage, req, done) {
-    var key = keygen(storage.keyspace, req);
+function queue(task, done) {
+    var storage = this,
+        key = this.keygen(task);
 
-    // store req as JSON serialized string
-    req = JSON.stringify(req);
+    // store task as JSON serialized string
+    task = JSON.stringify(task);
 
     // first add the key to the queue
-    storage.cn.rpush(storage.queueKey, key, function(err) {
+    this.client().rpush(this.queueKey(), key, function(err) {
         if (err) done(err);
 
-        // now store request data
-        else storage.cn.set(key, req, function(err) {
+        // now store task data
+        else storage.client().set(key, task, function(err) {
             if (err) done(err);
             else done(null, key);
         });
@@ -43,24 +27,48 @@ function queue(storage, req, done) {
 }
 
 /**
- * Remove a request from the queue and pass te serialized request to
- * the callback.
- * @param {RedisStorage} storage
+ * Remove a task from the queue and pass it to the callback.
  * @param {function} done
  */
-function unqueue(storage, done) {
-    storage.cn.lpop(storage.queueKey, function(err, key) {
+function unqueue(done) {
+    var storage = this;
+
+    this.client().lpop(this.queueKey(), function(err, key) {
         if (err) return done(err);
 
-        storage.cn.get(key, function(err, req) {
+        storage.client().get(key, function(err, task) {
             if (err) return done(err);
-            if (!req) return done();
+            if (!task) return done();
 
-            storage.cn.del(key);
-            done(null, JSON.parse(req));
+            storage.client().del(key);
+            done(null, JSON.parse(task), key);
         });
     });
 }
+
+/**
+ * Log task result.
+ * @param {string} key
+ * @param {object} result
+ * @param {function} done
+ */
+function log(key, result, done) {
+    var storage = this;
+    
+    // store result as JSON serialized string
+    result = JSON.stringify(result);
+
+    // generate result key from task key
+    key = key + "-result";
+    
+    // first add the key to the log
+    this.client().rpush(this.logKey(), key, function(err) {
+        if (err) done(err);
+
+        // now store result data
+        else storage.client().set(key, result, done);
+    });
+};
 
 /**
  * LaterStorage Redis implementation.
@@ -69,40 +77,53 @@ function unqueue(storage, done) {
  * @param {object} [opts]
  * @param {string} [opts.keyspace]
  */
-function RedisStorage(opts) {
-    var queueThis = function(req, done) {queue(this, req, done);},
-        unqueueThis = function(done) {unqueue(this, done);},
-        LaterStorage = require("http-later").LaterStorage;
+var RedisStorage = createStorage(queue, unqueue, log);
 
-    LaterStorage.call(this, queueThis, unqueueThis);
+/**
+ * Return the underlying redis client object.
+ * @returns {object}
+ */
+RedisStorage.prototype.redis = function() {
+    if (!this.redis) this.redis = redis.createClient();
+    return this.redis;
+};
 
-    /**
-     * @name RedisStorage#cn
-     * @type {object}
-     * @readonly
-     */
-    prop.readonly(this, "cn", redis.createClient());
+/**
+ * Prefix key with keyspace.
+ * @param {string} key
+ * @returns {string}
+ */
+RedisStorage.prototype.addKeyspace = function(key) {
+    return String(this.keyspace) + key;
+};
 
-    /**
-     * @name RedisStorage#keyspace
-     * @type {string}
-     * @readonly
-     */
-    prop.readonly(this, "keyspace", opts.keyspace || "");
+/**
+ * Return the key of the queue.
+ * @returns {string}
+ */
+RedisStorage.prototype.queueKey = function() {
+    return this.addKeyspace("queue");
+};
 
-    /**
-     * @name RedisStorage#queueKey
-     * @type {string}
-     * @readonly
-     */
-    prop.derived(this, "queueKey", function() {
-        return this.keyspace + "queue";
-    });
+/**
+ * Return the key of the log.
+ * @returns {string}
+ */
+RedisStorage.prototype.logKey = function() {
+    return this.addKeyspace("log");
+};
 
+/**
+ * Generate a key for the provided task.
+ * @param {object} task
+ * @returns {string}
+ */
+RedisStorage.prototype.keygen = function(task) {
+    task = JSON.stringify(task);
+    hash = sha1();
+    hash.update(task);
+    return this.addKeyspace(hash.digest("hex"));
 }
-
-RedisStorage.prototype = Object.create(LaterStorage.prototype);
-RedisStorage.prototype.constructor = RedisStorage;
 
 /** export RedisStorage class */
 module.exports = RedisStorage;
