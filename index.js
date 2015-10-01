@@ -84,8 +84,8 @@ var RedisStorage = createStorage(queue, unqueue, log);
  * @returns {object}
  */
 RedisStorage.prototype.redis = function() {
-    if (!this.redis) this.redis = redis.createredis();
-    return this.redis;
+    if (!this.cn) this.cn = redis.createClient();
+    return this.cn;
 };
 
 /**
