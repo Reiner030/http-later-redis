@@ -15,11 +15,11 @@ function queue(task, done) {
     task = JSON.stringify(task);
 
     // first add the key to the queue
-    this.client().rpush(this.queueKey(), key, function(err) {
+    this.redis().rpush(this.queueKey(), key, function(err) {
         if (err) done(err);
 
         // now store task data
-        else storage.client().set(key, task, function(err) {
+        else storage.redis().set(key, task, function(err) {
             if (err) done(err);
             else done(null, key);
         });
@@ -33,14 +33,14 @@ function queue(task, done) {
 function unqueue(done) {
     var storage = this;
 
-    this.client().lpop(this.queueKey(), function(err, key) {
+    this.redis().lpop(this.queueKey(), function(err, key) {
         if (err) return done(err);
 
-        storage.client().get(key, function(err, task) {
+        storage.redis().get(key, function(err, task) {
             if (err) return done(err);
             if (!task) return done();
 
-            storage.client().del(key);
+            storage.redis().del(key);
             done(null, JSON.parse(task), key);
         });
     });
@@ -62,11 +62,11 @@ function log(key, result, done) {
     key = key + "-result";
     
     // first add the key to the log
-    this.client().rpush(this.logKey(), key, function(err) {
+    this.redis().rpush(this.logKey(), key, function(err) {
         if (err) done(err);
 
         // now store result data
-        else storage.client().set(key, result, done);
+        else storage.redis().set(key, result, done);
     });
 };
 
@@ -84,7 +84,7 @@ var RedisStorage = createStorage(queue, unqueue, log);
  * @returns {object}
  */
 RedisStorage.prototype.redis = function() {
-    if (!this.redis) this.redis = redis.createClient();
+    if (!this.redis) this.redis = redis.createredis();
     return this.redis;
 };
 
