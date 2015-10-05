@@ -94,7 +94,7 @@ RedisStorage.prototype.redis = function() {
  * @returns {string}
  */
 RedisStorage.prototype.addKeyspace = function(key) {
-    return String(this.keyspace) + key;
+    return String(this.keyspace || "") + key;
 };
 
 /**
