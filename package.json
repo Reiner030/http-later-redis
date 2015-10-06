@@ -1,6 +1,6 @@
 {
   "name": "http-later-redis",
-  "version": "0.1.8",
+  "version": "1.0.0",
   "description": "redis driver for http-later",
   "main": "index.js",
   "dependencies": {
