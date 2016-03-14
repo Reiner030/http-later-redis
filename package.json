@@ -1,11 +1,11 @@
 {
   "name": "http-later-redis",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "redis driver for http-later",
   "main": "index.js",
   "dependencies": {
     "redis": "^1",
-    "http-later-storage": "git+https://e549446c3065af492571a7566890c26144efcab3:x-oauth-basic@github.com/Zingle/http-later-storage.git#master"
+    "http-later-storage": "^1"
   },
   "author": "Richard Remer (reanjr@gmail.com)",
   "license": "MIT",
