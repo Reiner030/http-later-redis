@@ -97,6 +97,8 @@ RedisStorage.prototype.redis = function() {
             this.cn = redis.createClient(this.url);
         else
             this.cn = redis.createClient();
+    // catch connection errors as service and so we can try reconnecting
+    this.cn.on('error', function() {true});
     return this.cn;
 };
 
