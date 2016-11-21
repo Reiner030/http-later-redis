@@ -1,19 +1,19 @@
 {
   "name": "http-later-redis",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "redis driver for http-later",
   "main": "index.js",
   "dependencies": {
     "redis": "^1",
     "http-later-storage": "^1"
   },
-  "author": "Richard Remer (reanjr@gmail.com)",
+  "author": "Richard Remer (reanjr@gmail.com) / modified by Reiner Keller (Reiner030@gmx.de)",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Zingle/http-later-redis.git"
+    "url": "https://github.com/Reiner030/http-later-redis.git"
   },
   "bugs": {
-    "url": "https://github.com/Zingle/http-later-redis/issues"
+    "url": "https://github.com/Reiner030/http-later-redis/issues"
   }
 }
