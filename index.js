@@ -76,6 +76,10 @@ function log(key, result, done) {
  * @augments {LaterStorage}
  * @param {object} [opts]
  * @param {string} [opts.keyspace]
+ * @param {string} [opts.host]
+ * @param {string} [opts.port]
+ * @param {string} [opts.unix_path]
+ * @param {string} [opts.url]
  */
 var RedisStorage = createStorage(queue, unqueue, log);
 
@@ -84,7 +88,17 @@ var RedisStorage = createStorage(queue, unqueue, log);
  * @returns {object}
  */
 RedisStorage.prototype.redis = function() {
-    if (!this.cn) this.cn = redis.createClient();
+    if (!this.cn)
+        if (this.host || this.port)
+            this.cn = redis.createClient(this.port || 6379, this.host || "127.0.0.1");
+        else if (this.unix_path)
+            this.cn = redis.createClient(this.unix_path);
+        else if (this.url)
+            this.cn = redis.createClient(this.url);
+        else
+            this.cn = redis.createClient();
+    // catch connection errors as service and so we can try reconnecting
+    this.cn.on('error', function() {true});
     return this.cn;
 };
 
